@@ -1,10 +1,33 @@
+<div align="center">
+
 # Codex Session
 
-> Your coding agent lives on a cheap VPS. You live in Discord. This is the bridge.
+### Your coding agent lives on a cheap VPS. You live in Discord. This is the bridge.
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Discord Gateway](https://img.shields.io/badge/Discord-raw%20WebSocket%20Gateway-5865F2?logo=discord&logoColor=white)](https://discord.com/developers/docs)
+[![Playwright](https://img.shields.io/badge/previews-Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
+[![Cloudflare Tunnels](https://img.shields.io/badge/expose-Cloudflare%20Tunnels-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+<em>One VPS. One Discord server. Zero babysitting.</em>
+
+</div>
+
+---
 
 **Codex Session** turns an ordinary Ubuntu box — a $5 Contabo, Linode, or Hetzner droplet — into an always-on coding workspace you drive entirely from Discord slash commands. Kick off a long-running coding session, watch it build, preview the result in your browser, push to GitHub, deploy over SSH, and expose it to the world through a Cloudflare Tunnel — all without ever SSH-ing in yourself or touching a heavyweight cloud console.
 
-It started life as the **ProjectExo** bot and is being steered toward a Codex-native execution core. The whole runtime, storage, and integration stack is here and working today.
+The whole runtime, storage, and integration stack is here and working today, with a Codex-native execution core growing in alongside the current agent layer.
+
+<div align="center">
+
+<!-- Record a short clip of `/make-live` running end to end and drop it in as assets/demo.gif -->
+![Codex Session in action](assets/demo.gif)
+
+<sub><em>Placeholder — a real capture of the `/make-live` pipeline goes here.</em></sub>
+
+</div>
 
 ---
 
@@ -97,7 +120,39 @@ It creates `/opt/codex-session`, installs everything, and leaves you three steps
 
 ---
 
-## Project layout
+## A typical day with it
+
+```
+you → /project new my-api
+you → /codex build a FastAPI service with a /health route and a Dockerfile
+bot   … working in thread …  ✅ 6 files written
+you → /preview                       # bot boots it, screenshots the browser, shows console logs
+you → /github push                   # repo created, code pushed
+you → /make-live                     # deploy over SSH → open a Cloudflare Tunnel → hands you a live URL
+bot   🌐 https://my-api.example.workers.dev
+```
+
+Every step happens from the chat window. You never SSH in, never open a cloud console, never leave Discord.
+
+---
+
+## Architecture
+
+Codex Session is layered so each concern stays swappable: slash commands sit on top, integration **layers** wrap the outside world, **tools** compose them into workflows, and everything durable lands in encrypted, CSV-backed **storage**.
+
+```mermaid
+flowchart TD
+    U["You · Discord slash commands"] --> GW["bot.py · raw WebSocket Gateway + router"]
+    GW --> CMD["commands/ · one module per command"]
+    CMD --> TOOLS["tools/ · multi-agent workers, tunnels, github, ssh"]
+    TOOLS --> LAYERS["layers/ · codex_exec · ssh · cloudflare · browser · shell"]
+    LAYERS --> EXT["Coding agent · SSH VPS · Cloudflare · GitHub · Playwright"]
+    CMD --> STORE["storage/ · encrypted CSV state"]
+    TOOLS --> STORE
+    STORE --> CRYPTO["utils/crypto · key never leaves the box"]
+```
+
+### Project layout
 
 ```
 bot.py                 Discord Gateway entry point + slash-command router
@@ -131,22 +186,26 @@ The spec parser, multi-agent file-conflict detection, and system-prompt injectio
 
 Everything is driven by `.env` (see `.env.example`). Keep `.env`, `.storage_key`, and anything under `data/*.csv` **out of version control** — the shipped `.gitignore` already does this for you. Security-sensitive knobs worth knowing:
 
-- `ALLOWED_PROJECT_ROOTS` — whitelist of directories the bot may touch.
-- `MAX_OUTPUT_CHARS` / `COMMAND_TIMEOUT` — guardrails on runaway output and long commands.
-- `ENCRYPTION_KEY` — auto-generated on first run if left blank.
+| Variable | Purpose |
+|---|---|
+| `ALLOWED_PROJECT_ROOTS` | Whitelist of directories the bot may touch |
+| `MAX_OUTPUT_CHARS` / `COMMAND_TIMEOUT` | Guardrails on runaway output and long commands |
+| `ENCRYPTION_KEY` | Auto-generated on first run if left blank |
 
 ---
 
-## Live demo
+## Roadmap
 
-Live demo — deploying soon.
-
----
-
-## A note on the roadmap
-
-The current execution layer is Claude-centered (`layers/claude_exec.py`) while the Codex-native core (`layers/codex_exec.py`) grows in alongside it. If you want to push the Codex backend forward, start with [`docs/codex-session-technical-spec.md`](docs/codex-session-technical-spec.md) — it lays out the always-on, multi-session server design this repo is heading toward.
+The current execution layer is agent-centered (`layers/claude_exec.py`) while the Codex-native core (`layers/codex_exec.py`) grows in alongside it. If you want to push the Codex backend forward, start with [`docs/codex-session-technical-spec.md`](docs/codex-session-technical-spec.md) — it lays out the always-on, multi-session server design this repo is heading toward.
 
 ---
 
-Built with a lot of coffee and a stubborn belief that a coding agent should be as easy to talk to as a friend in a group chat.
+## License
+
+Released under the [MIT License](LICENSE). Use it, fork it, ship it.
+
+---
+
+<div align="center">
+<sub>Built with a lot of coffee and a stubborn belief that a coding agent should be as easy to talk to as a friend in a group chat.</sub>
+</div>
