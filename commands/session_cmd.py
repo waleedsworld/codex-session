@@ -102,5 +102,84 @@ async def handle(sub: str, sub_opts: list, token: str, channel_id: str):
             f"Project detached from this channel. Use `/project use <name>` to start fresh."
         )
 
+    elif sub == "search":
+        # Full-text search across stored transcripts. Scope narrows from the
+        # explicit session id / project name down to the channel's own history
+        # when nothing is supplied. Backed by sess_store.search_messages, which
+        # returns per-hit excerpts already trimmed around the match.
+        query = o.get("query", "")
+        if not query.strip():
+            return await followup(token, "❌ Provide a `query` to search for.")
+        session_id = o.get("id", "")
+        project_name = o.get("project", "")
+        role = o.get("role", "")
+        limit = int(o.get("limit", 15))
+        if session_id or project_name:
+            matches = sess_store.search_messages(
+                query, session_id=session_id, project_name=project_name,
+                role=role, limit=limit,
+            )
+            scope = f"session `{session_id}`" if session_id else f"project **{project_name}**"
+        else:
+            matches = sess_store.search_messages(
+                query, channel_id=channel_id, role=role, limit=limit,
+            )
+            scope = "this channel"
+        if not matches:
+            return await followup(token, f"No transcript matches for `{query}` in {scope}.")
+        lines = [f"**Search results for** `{query}` — {scope} ({len(matches)} hit(s)):"]
+        for row in matches:
+            status = row.get("session_status", "")
+            tag = f" [{status}]" if status else ""
+            lines.append(
+                f"`{row['created_at']}` **{row['role']}**{tag} "
+                f"(`{row['session_id']}`): …{row['excerpt']}…"
+            )
+        await followup(token, "\n".join(lines)[:2000])
+
+    elif sub == "export":
+        # Export a full session transcript as a downloadable Markdown file.
+        # Defaults to the channel's active session; an explicit id overrides it.
+        # The whole transcript is streamed as a Discord file attachment so it is
+        # never truncated by the 2000-char message cap.
+        session_id = o.get("id", "")
+        if not session_id:
+            current = sess_store.get_active_for_channel(channel_id)
+            if not current:
+                return await followup(token, "No active session in this channel. Pass an `id` to export a specific session.")
+            session_id = current["id"]
+        sess = sess_store.get(session_id)
+        if not sess:
+            return await followup(token, f"❌ Session `{session_id}` not found.")
+        rows = sess_store.list_messages(session_id=session_id, limit=0)
+        if not rows:
+            return await followup(token, f"Session `{session_id}` has no stored transcript to export.")
+        header = [
+            f"# Session Transcript — {sess.get('project_name', 'unknown')}",
+            "",
+            f"- Session ID: `{session_id}`",
+            f"- Status: {sess.get('status', '')}",
+            f"- Backend thread: {sess.get('backend_session_id', '') or 'none'}",
+            f"- Messages: {len(rows)}",
+            f"- Created: {sess.get('created_at', '')}",
+            "",
+            "---",
+            "",
+        ]
+        body = []
+        for row in rows:
+            body.append(f"### {row['role']} — {row['created_at']}")
+            body.append("")
+            body.append(str(row.get("content", "")).strip())
+            body.append("")
+        doc = "\n".join(header + body)
+        filename = f"session_{session_id}.md"
+        await followup(
+            token,
+            f"📄 Exported **{len(rows)}** message(s) from session `{session_id}`.",
+            file_bytes=doc.encode("utf-8"),
+            filename=filename,
+        )
+
     else:
         await followup(token, f"❌ Unknown subcommand: `{sub}`")
