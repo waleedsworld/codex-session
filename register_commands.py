@@ -90,6 +90,8 @@ COMMANDS = [
         sub("list",   "List active sessions"),
         sub("current","Show current channel session"),
         sub("history","Show stored transcript history", [s("id","Session ID"), s("project","Project name"), i("limit","Max messages (default: 20)")]),
+        sub("search", "Search transcripts for text", [s("query","Text to search for",True), s("id","Session ID"), s("project","Project name"), s("role","Filter by role: user or assistant"), i("limit","Max hits (default: 15)")]),
+        sub("export", "Export a session transcript as a Markdown file", [s("id","Session ID (default: channel's active session)")]),
         sub("resume", "Resume a closed session", [s("id","Session ID",True)]),
         sub("close",  "Close a session",         [s("id","Session ID")]),
     ]},
