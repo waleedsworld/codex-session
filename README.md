@@ -171,7 +171,17 @@ docs/                  Codex migration technical spec
 
 ## Testing
 
-Tests are script-driven and fully mockable — no live network needed for the core logic:
+There are two layers of tests, both offline — no live Discord, SSH host, or browser needed.
+
+**Unit suite (pytest).** Fast, deterministic checks over the dependency-light helper modules — credential encryption, path/shell sanitization, output truncation, and the encrypted host/service store:
+
+```bash
+pip install -r requirements-dev.txt
+pytest                             # runs everything under tests/
+pytest tests/test_security.py -v   # just the sanitization guards
+```
+
+**Script-driven flow checks.** Mocked end-to-end exercises of the multi-agent orchestration:
 
 ```bash
 python test_bulk_flow.py           # mocked end-to-end multi-agent flow
