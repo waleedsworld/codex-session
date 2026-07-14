@@ -22,10 +22,11 @@ The whole runtime, storage, and integration stack is here and working today, wit
 
 <div align="center">
 
-<!-- Record a short clip of `/make-live` running end to end and drop it in as assets/demo.gif -->
 ![Codex Session in action](assets/demo.gif)
 
-<sub><em>Placeholder — a real capture of the `/make-live` pipeline goes here.</em></sub>
+<sub><em>The <code>/make-live</code> pipeline: Codex build → browser preview → SSH deploy → Cloudflare Tunnel → live URL.</em></sub>
+
+**Live demo:** deploying soon.
 
 </div>
 
