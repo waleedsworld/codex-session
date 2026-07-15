@@ -1263,7 +1263,38 @@ async def agent_ops_loop():
         await asyncio.sleep(0.25)
 
 
+def preflight():
+    """Fail fast with friendly guidance instead of a cryptic gateway crash.
+
+    Checks the handful of env vars the bot cannot start without and points the
+    operator straight at the fix. Everything else (Cloudflare, GitHub, SSH) is
+    optional and connects lazily, so we only hard-block on the essentials.
+    """
+    problems = []
+    if not os.getenv("DISCORD_BOT_TOKEN"):
+        problems.append(
+            "DISCORD_BOT_TOKEN is missing. Create a bot at "
+            "discord.com/developers/applications → Bot → Reset Token, then paste it into .env."
+        )
+    if not os.getenv("DISCORD_GUILD_ID"):
+        problems.append(
+            "DISCORD_GUILD_ID is missing. Enable Developer Mode in Discord, right-click your "
+            "server → Copy Server ID, and add it to .env (slash commands register per-guild)."
+        )
+    if not os.path.exists(os.path.join(ROOT, ".env")):
+        problems.append(
+            "No .env file found. Copy the template first:  cp .env.example .env"
+        )
+    if problems:
+        print("[x] ProjectExo can't start yet — a couple of things need attention:\n")
+        for p in problems:
+            print(f"    • {p}")
+        print("\n    Fix the above, then run `python bot.py` again. You've got this. 🚀")
+        sys.exit(1)
+
+
 async def main():
+    preflight()
     print("[*] Starting ProjectExo...")
     asyncio.create_task(discord_jobs_loop())
     asyncio.create_task(discord_ops_loop())

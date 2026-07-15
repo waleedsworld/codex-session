@@ -9,7 +9,13 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-GUILD_ID = os.getenv("DISCORD_GUILD_ID", "1066653561695502357")
+GUILD_ID = os.getenv("DISCORD_GUILD_ID")
+if not BOT_TOKEN or not GUILD_ID:
+    raise SystemExit(
+        "[x] Set DISCORD_BOT_TOKEN and DISCORD_GUILD_ID in .env before registering commands.\n"
+        "    Copy the template first if you haven't:  cp .env.example .env"
+    )
+# The Discord application ID is the first dot-segment of the bot token, base64-encoded.
 APP_ID = base64.b64decode(BOT_TOKEN.split(".")[0] + "==").decode()
 API = f"https://discord.com/api/v10/applications/{APP_ID}/guilds/{GUILD_ID}/commands"
 HEADERS = {"Authorization": f"Bot {BOT_TOKEN}", "Content-Type": "application/json"}
